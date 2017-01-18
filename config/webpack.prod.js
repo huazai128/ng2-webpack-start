@@ -18,6 +18,9 @@ const ProvidePlugin = require('webpack/lib/ProvidePlugin');
 const UglifyJsPlugin = require('webpack/lib/optimize/UglifyJsPlugin');
 const WebpackMd5Hash = require('webpack-md5-hash');
 const V8LazyParseWebpackPlugin = require('v8-lazy-parse-webpack-plugin');
+
+
+const CompressionWebpackPlugin = require('compression-webpack-plugin');
 /**
  * Webpack Constants
  */
@@ -263,6 +266,15 @@ module.exports = function (env) {
           },
 
         }
+      }),
+      new CompressionWebpackPlugin({ //gzip 压缩
+        asset: '[path].gz[query]',
+        algorithm: 'gzip',
+        test: new RegExp(
+          '\\.(js|css)$'    //压缩 js 与 css
+        ),
+        threshold: 10240,
+        minRatio: 0.8
       }),
 
     ],

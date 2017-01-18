@@ -1,24 +1,23 @@
-/**
- * @author: @AngularClass
- */
+
+
 
 const webpack = require('webpack');
 const helpers = require('./helpers');
 
-/*
- * Webpack Plugins
- */
-// problem with copy-webpack-plugin
+
+
 const AssetsPlugin = require('assets-webpack-plugin');
 const NormalModuleReplacementPlugin = require('webpack/lib/NormalModuleReplacementPlugin');
 const ContextReplacementPlugin = require('webpack/lib/ContextReplacementPlugin');
 const CommonsChunkPlugin = require('webpack/lib/optimize/CommonsChunkPlugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ForkCheckerPlugin = require('awesome-typescript-loader').ForkCheckerPlugin;
-const HtmlElementsPlugin = require('./html-elements-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const LoaderOptionsPlugin = require('webpack/lib/LoaderOptionsPlugin');
 const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
+const CompressionWebpackPlugin = require('compression-webpack-plugin');  //gzip压缩
+
+const ExtractTextPlugin = require("extract-text-webpack-plugin");
 
 /*
  * Webpack Constants
@@ -30,10 +29,10 @@ const METADATA = {
   isDevServer: helpers.isWebpackDevServer()
 };
 
-/*
- * Webpack configuration
- *
- * See: http://webpack.github.io/docs/configuration.html#cli
+/**
+ * webpack配置
+ * @param options
+ * @returns {{entry: {polyfills: string, vendor: string, main: string}, resolve: {extensions: [string,string,string], modules: [*,*]}, module: {rules: [*,*,*,*,*]}, plugins: [*,*,*,*,*,*,*,*,*,*,*,*,*,*], node: {global: boolean, crypto: string, process: boolean, module: boolean, clearImmediate: boolean, setImmediate: boolean}}}
  */
 module.exports = function (options) {
   isProd = options.env === 'production';
@@ -78,6 +77,9 @@ module.exports = function (options) {
 
       // An array of directory names to be resolved to the current directory
       modules: [helpers.root('src'), helpers.root('node_modules')],
+      alias: {
+        'jquery': helpers.root('node_modules/jquery/src/jquery')
+      }
 
     },
 
@@ -125,7 +127,15 @@ module.exports = function (options) {
          */
         {
           test: /\.css$/,
-          use: ['to-string-loader', 'css-loader']
+          use: ['to-string-loader', 'style-loader', 'css-loader']
+        },
+        {
+          test: /\.less$/,
+          use: ['to-string-loader', 'style-loader', 'css-loader', 'less-loader']
+        },
+        {
+          test: /\.(scss|sass)$/,
+          use: ['to-string-loader', 'style-loader', 'css-loader', 'sass-loader']
         },
 
         /* Raw loader support for *.html
@@ -145,8 +155,11 @@ module.exports = function (options) {
           test: /\.(jpg|png|gif)$/,
           use: 'file-loader'
         },
-
-      ],
+        {
+          test: /\.(woff|svg|ttf|eot)([\?]?.*)$/,
+          use: "file-loader?name=[name].[ext]"
+        }
+      ]
 
     },
 
@@ -207,7 +220,6 @@ module.exports = function (options) {
        */
       new CopyWebpackPlugin([
         { from: 'src/assets', to: 'assets' },
-        { from: 'src/meta'}
       ]),
 
 
@@ -222,9 +234,17 @@ module.exports = function (options) {
       new HtmlWebpackPlugin({
         template: 'src/index.html',
         title: METADATA.title,
-        chunksSortMode: 'dependency',
+        chunksSortMode: 'dependency', //必须通过上面的 CommonsChunkPlugin 的依赖关系自动添加 js，css 等
         metadata: METADATA,
-        inject: 'head'
+        inject: 'head',    //自动
+        minify: {
+          removeComments: true,        //去注释
+          collapseWhitespace: true     //压缩空格
+          //removeAttributeQuotes: true  //去除属性引用
+          // more options:
+          // https://github.com/kangax/html-minifier#options-quick-reference
+        },
+
       }),
 
       /*
@@ -260,9 +280,10 @@ module.exports = function (options) {
        *
        * Dependencies: HtmlWebpackPlugin
        */
-      new HtmlElementsPlugin({
-        headTags: require('./head-config.common')
-      }),
+      //头部图片注入
+      // new HtmlElementsPlugin({
+      //   headTags: require('./head-config.common')
+      // }),
 
       /**
        * Plugin LoaderOptionsPlugin (experimental)
@@ -292,6 +313,32 @@ module.exports = function (options) {
         /facade(\\|\/)math/,
         helpers.root('node_modules/@angular/core/src/facade/math.js')
       ),
+      //
+      new webpack.ProvidePlugin({
+        jQuery: 'jquery',
+        $: 'jquery'
+      }),
+      //抽离css，将css单独打包
+      //new webpack.ExtractTextPlugin('[name].[contenthash].css'),
+
+      //压缩，去除注释
+      new webpack.optimize.UglifyJsPlugin({
+        comments: false,        //去掉注释
+        compress: {
+          warnings: false       //忽略警告,要不然会有一大堆的黄色字体出现……
+        }
+      }),
+      //gzip压缩
+      new CompressionWebpackPlugin({ //gzip 压缩
+        asset: '[path].gz[query]',
+        algorithm: 'gzip',
+        test: new RegExp(
+          '\\.(js|css)$'    //压缩 js 与 css
+        ),
+        threshold: 10240,
+        minRatio: 0.8
+      })
+
     ],
 
     /*

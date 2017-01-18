@@ -1,11 +1,3 @@
-// For vendors for example jQuery, Lodash, angular2-jwt just import them here unless you plan on
-// chunking vendors files for async loading. You would need to import the async loaded vendors
-// at the entry point of the async loaded file. Also see custom-typings.d.ts as you also need to
-// run `typings install x` where `x` is your module
-
-// TODO(gdi2290): switch to DLLs
-
-// Angular 2
 import '@angular/platform-browser';
 import '@angular/platform-browser-dynamic';
 import '@angular/core';
@@ -14,18 +6,20 @@ import '@angular/forms';
 import '@angular/http';
 import '@angular/router';
 
-// AngularClass
 import '@angularclass/hmr';
 
-// RxJS
-import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/mergeMap';
+import "rxjs";
 
-if ('production' === ENV) {
-  // Production
+//导入js、css、ts、sass等等文件
+import '../bower_components/SpinKit/scss/spinners/3-wave.scss';
+import '../bower_components/Ionicons/scss/ionicons.scss';
+import '../bower_components/font-awesome/less/font-awesome.less';
+import "../bower_components/bootstrap/less/bootstrap.less";
+
+import 'bootstrap';    //必须在node_modules文件下安装才能导入
+import 'bootstrap-notify';
 
 
-} else {
-  // Development
+//可以导入插件
 
-}
+
